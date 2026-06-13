@@ -1,0 +1,156 @@
+{
+  "name": "Zeus Live Avatar",
+  "version": 1,
+  "description": "OBS scene collection for Zeus Live Avatar. Import via OBS > Scene Collection > Import.",
+  "scenes": [
+    {
+      "name": "ZeusAvatar",
+      "description": "Full-screen Zeus MetaHuman avatar — primary scene for live calls",
+      "sources": [
+        {
+          "name": "Zeus UE Window",
+          "type": "window_capture",
+          "description": "Captures the Unreal Engine window showing the MetaHuman avatar",
+          "settings": {
+            "window": "UnrealEditor.exe",
+            "capture_method": "auto",
+            "priority": 2
+          },
+          "position": { "x": 0, "y": 0 },
+          "size": { "width": 1920, "height": 1080 },
+          "notes": "Alternative: use 'ndi_source' type if NDI output is enabled in UE"
+        },
+        {
+          "name": "Zeus TTS Audio",
+          "type": "audio_output_capture",
+          "description": "Captures TTS audio output routed through virtual audio device",
+          "settings": {
+            "device_id": "zeus_virtual_mic",
+            "device_name": "Zeus Virtual Mic"
+          },
+          "notes": "Route TTS audio to the virtual audio device. See SETUP.md for configuration."
+        }
+      ],
+      "filters": [
+        {
+          "name": "Chroma Key",
+          "type": "chroma_key_filter_v2",
+          "description": "Removes green screen background from UE render (optional)",
+          "enabled": false,
+          "settings": {
+            "key_color_type": "green",
+            "similarity": 400,
+            "smoothness": 80,
+            "spill": 100
+          },
+          "notes": "Enable this if using a green/blue background in Unreal Engine instead of a virtual environment"
+        }
+      ]
+    },
+    {
+      "name": "ScreenShare",
+      "description": "Screen share with small Zeus avatar overlay in bottom-right corner",
+      "sources": [
+        {
+          "name": "Screen Capture",
+          "type": "monitor_capture",
+          "description": "Full screen capture of the primary monitor",
+          "settings": {
+            "monitor": 0,
+            "capture_method": "auto"
+          },
+          "position": { "x": 0, "y": 0 },
+          "size": { "width": 1920, "height": 1080 }
+        },
+        {
+          "name": "Zeus UE Window",
+          "type": "window_capture",
+          "description": "Small avatar overlay — same source as ZeusAvatar scene",
+          "settings": {
+            "window": "UnrealEditor.exe",
+            "capture_method": "auto"
+          },
+          "position": { "x": 1520, "y": 720 },
+          "size": { "width": 380, "height": 340 },
+          "notes": "Positioned bottom-right as a picture-in-picture overlay"
+        },
+        {
+          "name": "Zeus TTS Audio",
+          "type": "audio_output_capture",
+          "settings": {
+            "device_id": "zeus_virtual_mic"
+          }
+        }
+      ]
+    },
+    {
+      "name": "SplitView",
+      "description": "Side-by-side: Zeus avatar on left, screen share on right",
+      "sources": [
+        {
+          "name": "Zeus UE Window",
+          "type": "window_capture",
+          "description": "Zeus avatar on left half of screen",
+          "settings": {
+            "window": "UnrealEditor.exe",
+            "capture_method": "auto"
+          },
+          "position": { "x": 0, "y": 0 },
+          "size": { "width": 960, "height": 1080 },
+          "crop": {
+            "left": 240, "right": 240, "top": 0, "bottom": 0
+          }
+        },
+        {
+          "name": "Screen Capture",
+          "type": "monitor_capture",
+          "description": "Screen share on right half",
+          "settings": {
+            "monitor": 0,
+            "capture_method": "auto"
+          },
+          "position": { "x": 960, "y": 0 },
+          "size": { "width": 960, "height": 1080 }
+        },
+        {
+          "name": "Zeus TTS Audio",
+          "type": "audio_output_capture",
+          "settings": {
+            "device_id": "zeus_virtual_mic"
+          }
+        }
+      ]
+    }
+  ],
+  "audio_config": {
+    "description": "Audio routing for Zeus output",
+    "zeus_mic": {
+      "source": "Zeus TTS Audio",
+      "routing": "Virtual audio device → OBS Audio Capture → OBS Virtual Mic output",
+      "notes": "In Zoom/Meet, select 'OBS Virtual Camera' for video and the virtual audio device for microphone"
+    }
+  },
+  "output_config": {
+    "virtual_camera": {
+      "enabled": true,
+      "description": "OBS Virtual Camera — select this in Zoom, Google Meet, or Teams as your webcam"
+    },
+    "recording": {
+      "format": "mkv",
+      "encoder": "x264",
+      "bitrate": 6000,
+      "description": "Local recording for session archival"
+    }
+  },
+  "import_instructions": [
+    "1. Open OBS Studio 28+",
+    "2. Go to Scene Collection > Import",
+    "3. Select this JSON file",
+    "4. After import, configure the 'Zeus UE Window' source to point to your Unreal Engine window",
+    "5. Configure the 'Zeus TTS Audio' source to use your virtual audio device",
+    "6. If using NDI: replace 'window_capture' sources with 'ndi_source' type",
+    "7. If using green screen: enable the Chroma Key filter on ZeusAvatar scene",
+    "8. Start Virtual Camera (Tools > Start Virtual Camera)",
+    "9. In your video call app, select 'OBS Virtual Camera' as your camera"
+  ]
+}

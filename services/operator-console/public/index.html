@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zeus Live Avatar — Operator Console</title>
+<style>
+/* ─── Reset & Base ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-card: rgba(20, 20, 35, 0.8);
+  --bg-card-hover: rgba(30, 30, 50, 0.9);
+  --border: rgba(99, 102, 241, 0.2);
+  --border-active: rgba(99, 102, 241, 0.5);
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.3);
+  --red: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.3);
+  --green: #22c55e;
+  --yellow: #eab308;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-dim: #64748b;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  --radius: 12px;
+  --glass-bg: rgba(15, 15, 30, 0.6);
+  --glass-border: rgba(99, 102, 241, 0.15);
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #6366f1, #a78bfa, #6366f1);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.connection-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  transition: background 0.3s;
+}
+
+.connection-dot.connected {
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+}
+
+.rec-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--red);
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  animation: rec-pulse 2s infinite;
+}
+
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+}
+
+/* ─── Main Layout ────────────────────────────────────────────────────── */
+.main {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 52px);
+}
+
+@media (max-width: 768px) {
+  .main {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 0.3s;
+}
+
+.card:hover {
+  border-color: var(--border-active);
+}
+
+.card-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+/* ─── Left Column ────────────────────────────────────────────────────── */
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Status Panel */
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.status-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-value.speaking { color: var(--accent); }
+.status-value.idle { color: var(--text-secondary); }
+
+/* Service Health */
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.service-name {
+  color: var(--text-secondary);
+}
+
+.service-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.service-dot.online {
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+}
+
+/* Controls */
+.controls-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-active);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-stop {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--red);
+  font-size: 15px;
+  padding: 14px 16px;
+}
+
+.btn-stop:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: var(--red);
+  box-shadow: 0 0 20px var(--red-glow);
+}
+
+.btn-reset {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: var(--accent);
+}
+
+.btn-reset:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.btn-mute {
+  background: rgba(234, 179, 8, 0.1);
+  border-color: rgba(234, 179, 8, 0.3);
+  color: var(--yellow);
+}
+
+.btn-mute:hover {
+  background: rgba(234, 179, 8, 0.2);
+}
+
+.btn-mute.muted {
+  background: rgba(234, 179, 8, 0.25);
+  border-color: var(--yellow);
+}
+
+/* Mode Selector */
+.mode-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.mode-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.mode-select option {
+  background: #1a1a2e;
+  color: var(--text-primary);
+}
+
+/* ─── Right Column ───────────────────────────────────────────────────── */
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Conversation Log */
+.conversation-card {
+  flex: 1;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.conversation-log {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+}
+
+.conversation-log::-webkit-scrollbar {
+  width: 4px;
+}
+
+.conversation-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conversation-log::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.msg {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  animation: msg-in 0.3s ease-out;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg-user {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  align-self: flex-start;
+  max-width: 85%;
+}
+
+.msg-zeus {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  align-self: flex-end;
+  max-width: 85%;
+}
+
+.msg-operator {
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.15);
+  align-self: center;
+  max-width: 85%;
+  font-style: italic;
+}
+
+.msg-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  align-self: center;
+  max-width: 85%;
+  color: var(--red);
+}
+
+.msg-role {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.msg-user .msg-role { color: var(--accent); }
+.msg-zeus .msg-role { color: var(--green); }
+.msg-operator .msg-role { color: var(--yellow); }
+.msg-error .msg-role { color: var(--red); }
+
+.msg-time {
+  font-size: 10px;
+  color: var(--text-dim);
+  float: right;
+  margin-left: 8px;
+}
+
+.conversation-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* Quick Inject */
+.inject-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.inject-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 13px;
+}
+
+.inject-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.inject-input::placeholder {
+  color: var(--text-dim);
+}
+
+.btn-send {
+  padding: 10px 20px;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-send:hover {
+  background: #5558e6;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.btn-send:active {
+  transform: scale(0.95);
+}
+
+.btn-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Voice/Animation Panel */
+.voice-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.meter-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 72px;
+}
+
+.meter-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.15s ease-out;
+  background: linear-gradient(90deg, var(--accent), #a78bfa);
+}
+
+.meter-fill.speaking {
+  background: linear-gradient(90deg, var(--green), #4ade80);
+  animation: meter-glow 1s infinite alternate;
+}
+
+@keyframes meter-glow {
+  from { box-shadow: none; }
+  to { box-shadow: 0 0 8px rgba(34, 197, 94, 0.3); }
+}
+
+.meter-value {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  min-width: 40px;
+  text-align: right;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.info-label {
+  color: var(--text-secondary);
+}
+
+.info-value {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.info-value.good { color: var(--green); }
+.info-value.warn { color: var(--yellow); }
+.info-value.bad { color: var(--red); }
+
+/* ─── Footer ─────────────────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 12px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--glass-border);
+}
+
+/* ─── Notification Toast ─────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  backdrop-filter: blur(12px);
+  animation: toast-in 0.3s ease-out;
+  max-width: 320px;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.toast-info {
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+}
+
+.toast-error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.toast-warning {
+  background: rgba(234, 179, 8, 0.2);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  color: #fde047;
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Header ─────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-title">ZEUS LIVE AVATAR &mdash; Operator Console</div>
+  <div class="header-right">
+    <div class="connection-badge">
+      <div class="connection-dot" id="connectionDot"></div>
+      <span id="connectionLabel">Disconnected</span>
+    </div>
+    <div class="rec-badge" id="recBadge" style="display: none;">
+      <div class="rec-dot"></div>
+      <span>LIVE</span>
+    </div>
+  </div>
+</header>
+
+<!-- ─── Main Grid ──────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Left Column -->
+  <div class="left-col">
+
+    <!-- Status Panel -->
+    <div class="card">
+      <div class="card-title">Status</div>
+      <div class="status-grid">
+        <div class="status-item">
+          <span class="status-label">Mode</span>
+          <span class="status-value" id="statusMode">Conversation</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">State</span>
+          <span class="status-value idle" id="statusState">Idle</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Turn</span>
+          <span class="status-value" id="statusTurn">Idle</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Uptime</span>
+          <span class="status-value" id="statusUptime" style="font-family: var(--font-mono); font-size: 12px;">0:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Health -->
+    <div class="card">
+      <div class="card-title">Services</div>
+      <div class="service-list">
+        <div class="service-row">
+          <span class="service-name">STT (Speech-to-Text)</span>
+          <div class="service-dot" id="svcStt"></div>
+        </div>
+        <div class="service-row">
+          <span class="service-name">TTS (Text-to-Speech)</span>
+          <div class="service-dot" id="svcTts"></div>
+        </div>
+        <div class="service-row">
+          <span class="service-name">A2F (Audio2Face)</span>
+          <div class="service-dot" id="svcA2f"></div>
+        </div>
+        <div class="service-row">
+          <span class="service-name">Gateway</span>
+          <div class="service-dot" id="svcGateway"></div>
+        </div>
+        <div class="service-row">
+          <span class="service-name">OBS</span>
+          <div class="service-dot" id="svcObs"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="card">
+      <div class="card-title">Controls</div>
+      <div class="controls-grid">
+        <button class="btn btn-stop" id="btnStop" title="Emergency stop - immediately silences Zeus">
+          STOP
+        </button>
+        <button class="btn btn-reset" id="btnReset" title="Reset Zeus to default state">
+          Reset
+        </button>
+        <button class="btn btn-mute" id="btnMute" title="Toggle mute - prevents Zeus from speaking">
+          Mute Zeus
+        </button>
+        <select class="mode-select" id="modeSelect" title="Switch conversation mode">
+          <option value="conversation">Conversation</option>
+          <option value="meeting">Meeting</option>
+          <option value="webinar">Webinar</option>
+          <option value="training">Training</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right Column -->
+  <div class="right-col">
+
+    <!-- Conversation Log -->
+    <div class="card conversation-card">
+      <div class="card-title">Conversation Log</div>
+      <div class="conversation-log" id="conversationLog">
+        <div class="conversation-empty">Waiting for conversation to begin...</div>
+      </div>
+      <div class="inject-form">
+        <input type="text" class="inject-input" id="injectInput"
+               placeholder="Type a message for Zeus to speak..."
+               autocomplete="off" />
+        <button class="btn-send" id="btnInject">Send</button>
+      </div>
+    </div>
+
+    <!-- Voice / Animation -->
+    <div class="card">
+      <div class="card-title">Voice &amp; Animation</div>
+      <div class="voice-panel">
+        <div class="meter-row">
+          <span class="meter-label">Speaking</span>
+          <div class="meter-bar">
+            <div class="meter-fill" id="volumeMeter" style="width: 0%;"></div>
+          </div>
+          <span class="meter-value" id="volumeValue">0%</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Emotion</span>
+          <span class="info-value" id="emotionValue">Neutral</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Latency</span>
+          <span class="info-value good" id="latencyValue">--ms</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Footer -->
+<div class="footer">
+  Opulent Bots LLC &mdash; Zeus Live Avatar Operator Console v1.0
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ─── JavaScript ──────────────────────────────────────────────────── -->
+<script>
+(function() {
+  "use strict";
+
+  // ─── Config ───────────────────────────────────────────────────────
+  const params = new URLSearchParams(window.location.search);
+  const TOKEN = params.get("token") || "";
+  const WS_URL = (location.protocol === "https:" ? "wss://" : "ws://")
+    + location.host + "/ws?token=" + encodeURIComponent(TOKEN);
+
+  // ─── DOM Refs ─────────────────────────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+
+  const connectionDot = $("connectionDot");
+  const connectionLabel = $("connectionLabel");
+  const recBadge = $("recBadge");
+  const statusMode = $("statusMode");
+  const statusState = $("statusState");
+  const statusTurn = $("statusTurn");
+  const statusUptime = $("statusUptime");
+  const svcDots = {
+    stt: $("svcStt"),
+    tts: $("svcTts"),
+    a2f: $("svcA2f"),
+    gateway: $("svcGateway"),
+    obs: $("svcObs"),
+  };
+  const conversationLog = $("conversationLog");
+  const injectInput = $("injectInput");
+  const btnInject = $("btnInject");
+  const btnStop = $("btnStop");
+  const btnReset = $("btnReset");
+  const btnMute = $("btnMute");
+  const modeSelect = $("modeSelect");
+  const volumeMeter = $("volumeMeter");
+  const volumeValue = $("volumeValue");
+  const emotionValue = $("emotionValue");
+  const latencyValue = $("latencyValue");
+
+  // ─── State ────────────────────────────────────────────────────────
+  let ws = null;
+  let isMuted = false;
+  let reconnectAttempts = 0;
+  let reconnectTimer = null;
+  let startTime = Date.now();
+  let conversationEmpty = true;
+
+  // ─── WebSocket Connection ─────────────────────────────────────────
+  function connect() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
+    ws = new WebSocket(WS_URL);
+
+    ws.onopen = function() {
+      connectionDot.classList.add("connected");
+      connectionLabel.textContent = "Connected";
+      recBadge.style.display = "flex";
+      reconnectAttempts = 0;
+      startTime = Date.now();
+      showToast("Connected to Zeus Gateway", "info");
+    };
+
+    ws.onclose = function(e) {
+      connectionDot.classList.remove("connected");
+      connectionLabel.textContent = "Disconnected";
+      recBadge.style.display = "none";
+
+      if (e.code === 4001) {
+        showToast("Authentication failed. Check your operator token.", "error");
+        return; // Do not reconnect on auth failure
+      }
+
+      // Exponential backoff reconnect
+      reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+      connectionLabel.textContent = "Reconnecting...";
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connect, delay);
+    };
+
+    ws.onerror = function() {
+      // onclose will fire after onerror
+    };
+
+    ws.onmessage = function(event) {
+      try {
+        var msg = JSON.parse(event.data);
+        handleMessage(msg);
+      } catch (e) {
+        // Ignore malformed messages
+      }
+    };
+  }
+
+  // ─── Message Handler ──────────────────────────────────────────────
+  function handleMessage(msg) {
+    switch (msg.type) {
+      case "state":
+        updateState(msg.state);
+        break;
+      case "speaking":
+        updateSpeaking(msg.speaking);
+        break;
+      case "barge_in":
+        showToast("Barge-in detected: user interrupted Zeus", "warning");
+        break;
+      case "conversation":
+        addMessage(msg.role, msg.text, msg.timestamp);
+        break;
+      case "health":
+        updateServiceHealth(msg.services);
+        break;
+      case "emotion":
+        emotionValue.textContent = capitalize(msg.emotion);
+        break;
+      case "latency":
+        updateLatency(msg.latencyMs);
+        break;
+      case "volume":
+        updateVolume(msg.volumeLevel);
+        break;
+      case "error":
+        addMessage("error", msg.message, Date.now());
+        showToast(msg.message, "error");
+        break;
+      case "pong":
+        // Latency measurement
+        break;
+    }
+  }
+
+  function updateState(state) {
+    if (!state) return;
+    statusMode.textContent = capitalize(state.mode || "conversation");
+    modeSelect.value = state.mode || "conversation";
+
+    var stateLabel = state.speaking ? "Speaking" : "Idle";
+    statusState.textContent = stateLabel;
+    statusState.className = "status-value " + (state.speaking ? "speaking" : "idle");
+
+    statusTurn.textContent = capitalize(state.turn || "idle");
+
+    isMuted = state.muted || false;
+    btnMute.textContent = isMuted ? "Unmute Zeus" : "Mute Zeus";
+    btnMute.classList.toggle("muted", isMuted);
+
+    if (state.services) {
+      updateServiceHealth(state.services);
+    }
+
+    updateLatency(state.latencyMs || 0);
+    emotionValue.textContent = capitalize(state.emotion || "neutral");
+    updateVolume(state.volumeLevel || 0);
+    updateSpeaking(state.speaking);
+  }
+
+  function updateSpeaking(speaking) {
+    var meter = volumeMeter;
+    if (speaking) {
+      meter.classList.add("speaking");
+      statusState.textContent = "Speaking";
+      statusState.className = "status-value speaking";
+    } else {
+      meter.classList.remove("speaking");
+      if (statusState.textContent === "Speaking") {
+        statusState.textContent = "Idle";
+        statusState.className = "status-value idle";
+      }
+    }
+  }
+
+  function updateServiceHealth(services) {
+    if (!services) return;
+    for (var key in svcDots) {
+      if (svcDots[key] && services[key] !== undefined) {
+        svcDots[key].classList.toggle("online", !!services[key]);
+      }
+    }
+  }
+
+  function updateLatency(ms) {
+    ms = Math.round(ms || 0);
+    latencyValue.textContent = ms > 0 ? ms + "ms" : "--ms";
+    latencyValue.className = "info-value " + (ms === 0 ? "" : ms < 500 ? "good" : ms < 1000 ? "warn" : "bad");
+  }
+
+  function updateVolume(level) {
+    var pct = Math.round(Math.min(100, Math.max(0, level * 100)));
+    volumeMeter.style.width = pct + "%";
+    volumeValue.textContent = pct + "%";
+  }
+
+  // ─── Conversation Log ─────────────────────────────────────────────
+  function addMessage(role, text, timestamp) {
+    if (conversationEmpty) {
+      conversationLog.innerHTML = "";
+      conversationEmpty = false;
+    }
+
+    var div = document.createElement("div");
+    div.className = "msg msg-" + role;
+
+    var timeStr = "";
+    if (timestamp) {
+      var d = new Date(timestamp);
+      timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+
+    var roleLabel = role === "zeus" ? "Zeus" : role === "user" ? "User" : role === "operator" ? "Operator" : "System";
+    div.innerHTML =
+      '<div class="msg-role">' + roleLabel + (timeStr ? '<span class="msg-time">' + timeStr + '</span>' : '') + '</div>' +
+      '<div class="msg-text">' + escapeHtml(text) + '</div>';
+
+    conversationLog.appendChild(div);
+
+    // Keep max 200 messages
+    while (conversationLog.children.length > 200) {
+      conversationLog.removeChild(conversationLog.firstChild);
+    }
+
+    // Auto-scroll to bottom
+    conversationLog.scrollTop = conversationLog.scrollHeight;
+  }
+
+  // ─── API Calls ────────────────────────────────────────────────────
+  function apiCall(path, body) {
+    return fetch(path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Operator-Token": TOKEN,
+      },
+      body: JSON.stringify(body),
+    })
+    .then(function(resp) {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      return resp.json();
+    });
+  }
+
+  // ─── Event Handlers ───────────────────────────────────────────────
+  btnStop.addEventListener("click", function() {
+    btnStop.disabled = true;
+    apiCall("/api/stop", {})
+      .then(function() { showToast("STOP command sent", "warning"); })
+      .catch(function(err) { showToast("Stop failed: " + err.message, "error"); })
+      .finally(function() { btnStop.disabled = false; });
+  });
+
+  btnReset.addEventListener("click", function() {
+    btnReset.disabled = true;
+    apiCall("/api/reset", {})
+      .then(function() { showToast("Reset command sent", "info"); })
+      .catch(function(err) { showToast("Reset failed: " + err.message, "error"); })
+      .finally(function() { btnReset.disabled = false; });
+  });
+
+  btnMute.addEventListener("click", function() {
+    if (isMuted) {
+      // Unmute = reset
+      apiCall("/api/reset", {})
+        .then(function() {
+          isMuted = false;
+          btnMute.textContent = "Mute Zeus";
+          btnMute.classList.remove("muted");
+          showToast("Zeus unmuted", "info");
+        })
+        .catch(function(err) { showToast("Unmute failed: " + err.message, "error"); });
+    } else {
+      apiCall("/api/stop", {})
+        .then(function() {
+          isMuted = true;
+          btnMute.textContent = "Unmute Zeus";
+          btnMute.classList.add("muted");
+          showToast("Zeus muted", "warning");
+        })
+        .catch(function(err) { showToast("Mute failed: " + err.message, "error"); });
+    }
+  });
+
+  modeSelect.addEventListener("change", function() {
+    var mode = modeSelect.value;
+    apiCall("/api/mode", { mode: mode })
+      .then(function() { showToast("Mode set to: " + capitalize(mode), "info"); })
+      .catch(function(err) { showToast("Mode change failed: " + err.message, "error"); });
+  });
+
+  function injectText() {
+    var text = injectInput.value.trim();
+    if (!text) return;
+
+    btnInject.disabled = true;
+    injectInput.disabled = true;
+
+    apiCall("/api/inject", { text: text })
+      .then(function() {
+        injectInput.value = "";
+      })
+      .catch(function(err) { showToast("Inject failed: " + err.message, "error"); })
+      .finally(function() {
+        btnInject.disabled = false;
+        injectInput.disabled = false;
+        injectInput.focus();
+      });
+  }
+
+  btnInject.addEventListener("click", injectText);
+  injectInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      injectText();
+    }
+  });
+
+  // ─── Uptime Timer ─────────────────────────────────────────────────
+  setInterval(function() {
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    var hours = Math.floor(elapsed / 3600);
+    var minutes = Math.floor((elapsed % 3600) / 60);
+    var seconds = elapsed % 60;
+    var str = hours > 0
+      ? hours + ":" + pad(minutes) + ":" + pad(seconds)
+      : minutes + ":" + pad(seconds);
+    statusUptime.textContent = str;
+  }, 1000);
+
+  // ─── Toast Notifications ──────────────────────────────────────────
+  function showToast(message, type) {
+    type = type || "info";
+    var container = $("toastContainer");
+    var toast = document.createElement("div");
+    toast.className = "toast toast-" + type;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(function() {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateX(40px)";
+      toast.style.transition = "all 0.3s";
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 4000);
+
+    // Max 5 toasts
+    while (container.children.length > 5) {
+      container.removeChild(container.firstChild);
+    }
+  }
+
+  // ─── Utilities ────────────────────────────────────────────────────
+  function capitalize(s) {
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+  }
+
+  function pad(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function escapeHtml(text) {
+    var div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────────
+  if (!TOKEN) {
+    showToast("No operator token. Add ?token=YOUR_TOKEN to the URL.", "error");
+    connectionLabel.textContent = "No Token";
+  } else {
+    connect();
+  }
+
+})();
+</script>
+
+</body>
+</html>

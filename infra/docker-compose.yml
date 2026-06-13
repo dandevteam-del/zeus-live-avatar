@@ -1,0 +1,218 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Zeus Live Avatar — Docker Compose
+# Opulent Bots LLC — All rights reserved
+#
+# Orchestrates all backend services for the Zeus Live Avatar pipeline:
+#   Redis (event bus) -> STT -> Gateway -> TTS -> A2F Bridge -> Operator Console
+#
+# Usage:
+#   cp .env.example .env  # edit values
+#   docker compose -f infra/docker-compose.yml up -d
+#
+# With optional NVIDIA NIM Audio2Face:
+#   cp infra/docker-compose.override.yml.example docker-compose.override.yml
+#   docker compose -f infra/docker-compose.yml up -d
+#
+# Logs:
+#   docker compose -f infra/docker-compose.yml logs -f [service]
+#
+# Teardown:
+#   docker compose -f infra/docker-compose.yml down
+#   docker compose -f infra/docker-compose.yml down -v  # also remove volumes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: zeus-live-avatar
+
+services:
+  # ─── Redis — Event Bus & State ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: zeus-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - zeus-avatar-net
+
+  # ─── STT Service — Speech-to-Text (faster-whisper) ─────────────────────────
+  stt-service:
+    build:
+      context: ../services/stt-service
+      dockerfile: Dockerfile
+    container_name: zeus-stt
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "${STT_PORT:-8001}:${STT_PORT:-8001}"
+    env_file:
+      - ../.env
+    environment:
+      - REDIS_HOST=redis
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9001/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - zeus-avatar-net
+
+  # ─── TTS Service — Text-to-Speech (Coqui / Piper) ──────────────────────────
+  tts-service:
+    build:
+      context: ../services/tts-service
+      dockerfile: Dockerfile
+    container_name: zeus-tts
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "${TTS_PORT:-8002}:${TTS_PORT:-8002}"
+    env_file:
+      - ../.env
+    environment:
+      - REDIS_HOST=redis
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - model-cache:/root/.local/share/tts
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9002/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    restart: unless-stopped
+    networks:
+      - zeus-avatar-net
+
+  # ─── Zeus Gateway — Orchestrator & Brain Client ─────────────────────────────
+  zeus-gateway:
+    build:
+      context: ../services/zeus-gateway
+      dockerfile: Dockerfile
+    container_name: zeus-gateway
+    depends_on:
+      redis:
+        condition: service_healthy
+      stt-service:
+        condition: service_healthy
+      tts-service:
+        condition: service_healthy
+    ports:
+      - "${GATEWAY_PORT:-8000}:${GATEWAY_PORT:-8000}"
+    env_file:
+      - ../.env
+    environment:
+      - REDIS_HOST=redis
+      - STT_SERVICE_URL=http://stt-service:${STT_PORT:-8001}
+      - TTS_SERVICE_URL=http://tts-service:${TTS_PORT:-8002}
+      - A2F_SERVICE_URL=http://a2f-bridge:${A2F_PORT:-8003}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - zeus-avatar-net
+
+  # ─── Audio2Face Bridge — Facial Animation ───────────────────────────────────
+  a2f-bridge:
+    build:
+      context: ../services/a2f-bridge
+      dockerfile: Dockerfile
+    container_name: zeus-a2f
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "${A2F_PORT:-8003}:${A2F_PORT:-8003}"
+    env_file:
+      - ../.env
+    environment:
+      - REDIS_HOST=redis
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9003/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - zeus-avatar-net
+
+  # ─── Operator Console — Web UI for Live Control ────────────────────────────
+  operator-console:
+    build:
+      context: ../services/operator-console
+      dockerfile: Dockerfile
+    container_name: zeus-operator
+    depends_on:
+      zeus-gateway:
+        condition: service_healthy
+    ports:
+      - "${OPERATOR_PORT:-8080}:${OPERATOR_PORT:-8080}"
+    env_file:
+      - ../.env
+    environment:
+      - GATEWAY_URL=http://zeus-gateway:${GATEWAY_PORT:-8000}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - zeus-avatar-net
+
+# ─── Networks ───────────────────────────────────────────────────────────────
+networks:
+  zeus-avatar-net:
+    driver: bridge
+    name: zeus-avatar-net
+
+# ─── Volumes ────────────────────────────────────────────────────────────────
+volumes:
+  redis-data:
+    driver: local
+    name: zeus-redis-data
+  model-cache:
+    driver: local
+    name: zeus-model-cache

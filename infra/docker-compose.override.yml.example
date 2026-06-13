@@ -1,0 +1,59 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Zeus Live Avatar — Docker Compose Override (NVIDIA NIM Audio2Face)
+# Opulent Bots LLC — All rights reserved
+#
+# OPTIONAL: Adds the NVIDIA Audio2Face-3D NIM container for highest-quality
+# facial animation. Requires NGC credentials and a compatible NVIDIA GPU.
+#
+# To use:
+#   1. Set NGC_API_KEY in .env
+#   2. Copy this file to docker-compose.override.yml:
+#        cp infra/docker-compose.override.yml.example infra/docker-compose.override.yml
+#   3. Set A2F_BACKEND=nim in .env
+#   4. docker compose -f infra/docker-compose.yml up -d
+#
+# NGC credentials:
+#   Sign up at https://ngc.nvidia.com and generate an API key.
+#   You may need NVIDIA AI Enterprise access for production use.
+#   See docs/LICENSES.md for full license details.
+#
+# GPU requirements:
+#   - NVIDIA GPU with 8GB+ VRAM (RTX 3070+ recommended)
+#   - NVIDIA driver 535+
+#   - nvidia-container-toolkit installed
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+  a2f-nim:
+    image: nvcr.io/nvidia/ace/audio2face-3d:latest
+    container_name: zeus-a2f-nim
+    ports:
+      - "50051:50051"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NGC_API_KEY=${NGC_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:50051/v1/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+    networks:
+      - zeus-avatar-net
+
+  # Override the a2f-bridge to connect to NIM container
+  a2f-bridge:
+    environment:
+      - A2F_NIM_ENDPOINT=a2f-nim:50051
+    depends_on:
+      redis:
+        condition: service_healthy
+      a2f-nim:
+        condition: service_healthy

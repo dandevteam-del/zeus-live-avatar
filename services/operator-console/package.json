@@ -1,0 +1,16 @@
+{
+  "name": "zeus-operator-console",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Operator Console for Zeus Live Avatar — real-time control dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "ws": "^8.16.0",
+    "redis": "^4.6.0"
+  }
+}

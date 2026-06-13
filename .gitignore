@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Zeus Live Avatar — Git Ignore
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Environment
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+
+# Models (never commit weights)
+models/
+*.onnx
+*.bin
+*.pt
+*.pth
+*.safetensors
+*.gguf
+
+# NVIDIA
+*.plan
+*.engine
+
+# Unreal Engine (large binaries)
+ue/ZeusMetaHuman/Binaries/
+ue/ZeusMetaHuman/Intermediate/
+ue/ZeusMetaHuman/Saved/
+ue/ZeusMetaHuman/DerivedDataCache/
+ue/ZeusMetaHuman/.vs/
+ue/ZeusMetaHuman/*.sln
+*.uasset
+*.umap
+
+# OBS
+obs/*.json
+!obs/scene-collection-example.json
+
+# Audio/Video temp
+*.wav
+*.mp3
+*.mp4
+*.pcm
+*.raw
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+
+# Redis
+dump.rdb
