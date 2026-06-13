@@ -30,13 +30,10 @@ cat > "$PROJ/$NAME.uproject" <<JSON
     { "Name": "ZeusAnimReceiver", "Type": "Runtime", "LoadingPhase": "Default" }
   ],
   "Plugins": [
-    { "Name": "MetaHuman", "Enabled": true },
     { "Name": "LiveLink", "Enabled": true },
     { "Name": "LiveLinkControlRig", "Enabled": true },
-    { "Name": "AppleARKitFaceSupport", "Enabled": true },
     { "Name": "PixelStreaming", "Enabled": true },
-    { "Name": "WebSocketNetworking", "Enabled": true },
-    { "Name": "Bridge", "Enabled": true }
+    { "Name": "WebSocketNetworking", "Enabled": true }
   ]
 }
 JSON
