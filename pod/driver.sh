@@ -2,15 +2,14 @@
 # READ-ONLY diagnostic (no clicks).
 set -x
 EP=/home/ue4/UnrealEngine/Engine/Plugins/MetaHuman/MetaHumanCharacter
-SO="$EP/Binaries/Linux/libUnrealEditor-MetaHumanCharacterEditor.so"
-echo "=== factory class names in the editor module ==="
-strings "$SO" 2>/dev/null | grep -iE "MetaHumanCharacterFactory|FactoryNew|UMetaHumanCharacter[A-Za-z]*Factory" | sort -u | head
-echo "=== python-exposed classes (MetaHumanCharacter*) ==="
-strings "$EP"/Binaries/Linux/*.so 2>/dev/null | grep -oE "MetaHumanCharacter[A-Za-z]*" | sort | uniq -c | sort -rn | head -20
-echo "=== the core-data gate / warning string ==="
-strings "$SO" 2>/dev/null | grep -iE "Core Data|requires that|not installed|additional content|disabled" | sort -u | head
-echo "=== did MetaHumanCharacterEditor module load this boot? ==="
-grep -aiE "MetaHumanCharacterEditor|MetaHumanCharacter.*module|FMetaHumanCharacterEditorModule" /workspace/ue.log | tail -8
-echo "=== any 'Core Data' warning emitted in ue.log? ==="
-grep -aiE "core data|MetaHumanCharacter.*(warn|requires|missing)" /workspace/ue.log | tail -8
+echo "=== ALL .so binaries actually present for MetaHumanCharacter ==="
+ls -1 "$EP/Binaries/Linux/" 2>/dev/null
+echo "=== modules the plugin EXPECTS (from .modules manifest) ==="
+cat "$EP/Binaries/Linux/UnrealEditor.modules" 2>/dev/null
+echo "=== is MetaHumanCharacterEditor.so present? ==="
+ls -la "$EP/Binaries/Linux/"*MetaHumanCharacterEditor*.so 2>&1 | head
+echo "=== source for the missing module present (could compile)? ==="
+ls "$EP/Source/" 2>/dev/null
+echo "=== did the editor log a 'missing module / compile' for MetaHumanCharacter this boot? ==="
+grep -aiE "MetaHumanCharacterEditor|MetaHumanDefaultEditorPipeline|MetaHumanCharacterMigrationEditor|could not be loaded|missing modules|Incompatible" /workspace/ue.log | tail -12
 echo "diag done"
