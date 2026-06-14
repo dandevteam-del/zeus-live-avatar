@@ -67,10 +67,26 @@ fi
 echo "=== vulkaninfo after ICD ==="; vulkaninfo --summary 2>&1 | grep -iE "deviceName|driverName|apiVersion|GPU" | head -6
 
 # ----- launch UE editor (Vulkan on the GPU) -----
-echo "----- launching UE editor -----"
+# Installed engine's DDC (shader cache) location is read-only in the container, so
+# use a writable cache on the volume + memory fallback, and suppress the driver
+# warning so it doesn't block startup. Relaunch loop so a crash doesn't leave a
+# black desktop (and the crash reporter is killed each time).
+mkdir -p "$WORK/ddc"
+echo "----- launching UE editor (loop) -----"
 if [ -n "$UE" ]; then
-  VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-}" "$UE" "$PROJ/ZeusAvatar.uproject" -vulkan -nosplash -stdout -FullStdOutLogOutput > "$WORK/ue.log" 2>&1 &
-  echo "launched (pid $!)"
+  ( while true; do
+      pkill -f CrashReportClient 2>/dev/null
+      env "VK_ICD_FILENAMES=${VK_ICD_FILENAMES:-}" \
+          "UE-LocalDataCachePath=$WORK/ddc" "UE-SharedDataCachePath=None" \
+          "$UE" "$PROJ/ZeusAvatar.uproject" \
+          -vulkan -nosplash -stdout -unattended=0 \
+          -DDC-ForceMemoryCache -NoVerifyGC \
+          -ExecCmds="r.WarningOnBadDriverVersion 0" \
+          >> "$WORK/ue.log" 2>&1
+      echo "[loop] editor exited rc=$? — relaunching in 8s" >> "$WORK/ue.log"
+      sleep 8
+    done ) &
+  echo "launched editor loop (pid $!)"
 else
   echo "!! UE editor not found"
 fi
