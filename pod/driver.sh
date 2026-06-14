@@ -4,12 +4,10 @@ set -x
 export DISPLAY=:1
 WEBDIR=/workspace/web
 WIN=$(xdotool search --name "ZeusAvatar - Unreal Editor" 2>/dev/null | head -1)
-echo "UE win=$WIN"
 xdotool windowactivate "$WIN" 2>/dev/null; xdotool windowraise "$WIN" 2>/dev/null
 sleep 1
-# Crop the top menu bar (full res) so we can read label x-positions precisely.
-import -window root -crop 700x34+0+0 +repage "$WEBDIR/menubar.png" 2>/dev/null
-echo "menubar crop saved -> /menubar.png"
-# Also a full shot for context
+# Open the Tools menu (x=237 y=12) and screenshot the open dropdown.
+xdotool mousemove 237 12 click 1
+sleep 1
 import -window root "$WEBDIR/screen.png" 2>/dev/null
-echo "driver done"
+echo "opened Tools menu"
