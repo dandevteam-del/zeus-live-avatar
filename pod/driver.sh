@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
+# Force-build the missing MetaHuman editor modules by name (detached).
 set -x
 ENG=/home/ue4/UnrealEngine
-echo "=== MetaHumanCharacter binaries now ==="
-ls -la "$ENG/Engine/Plugins/MetaHuman/MetaHumanCharacter/Binaries/Linux/" 2>/dev/null
-echo "=== did MetaHumanCharacterEditor.so get built ANYWHERE (engine or project)? ==="
-find "$ENG" /workspace -iname "*MetaHumanCharacterEditor*.so" 2>/dev/null | head
-echo "=== all NEW .so built in last 30 min under MetaHuman plugins ==="
-find "$ENG/Engine/Plugins/MetaHuman" -name "*.so" -mmin -30 2>/dev/null
-echo "=== build.log: was MetaHumanCharacterEditor mentioned as compiled/skipped? ==="
-grep -iE "MetaHumanCharacterEditor|MetaHumanCharacter " "$ENG/../"*build.log /workspace/web/build.log 2>/dev/null | head
-grep -icE "MetaHumanCharacterEditor" /workspace/web/build.log 2>/dev/null
-echo "=== what targets/modules did UBT actually build? (module link lines) ==="
-grep -iE "Link .*\.so" /workspace/web/build.log 2>/dev/null | head -40
-echo "diag done"
+WEBDIR=/workspace/web
+UPROJ=/workspace/ZeusAvatar/ZeusAvatar.uproject
+if pgrep -f "UnrealBuildTool.*Module" >/dev/null 2>&1 || pgrep -f "Build.sh UnrealEditor.*Module" >/dev/null 2>&1; then
+  echo "targeted build already running"
+else
+  cd "$ENG"
+  nohup ./Engine/Build/BatchFiles/Linux/Build.sh UnrealEditor Linux Development \
+     -Project="$UPROJ" -TargetType=Editor \
+     -Module=MetaHumanCharacterEditor \
+     -Module=MetaHumanCharacterMigrationEditor \
+     -Module=MetaHumanDefaultEditorPipeline \
+     -Module=InterchangeDNA \
+     > "$WEBDIR/build2.log" 2>&1 &
+  echo "launched targeted build pid $! -> /build2.log"
+fi
+sleep 8
+echo "=== build2.log head ==="
+head -25 "$WEBDIR/build2.log" 2>/dev/null
+echo "driver done"
