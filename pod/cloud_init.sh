@@ -57,6 +57,18 @@ Local=(Type=FileSystem, ReadOnly=false, Clean=false, Flush=false, PurgeTransient
 
 [SystemSettings]
 r.WarningOnBadDriverVersion=0
+; trim heavy rendering features -> far fewer shader permutations to compile
+r.Lumen.Supported=0
+r.RayTracing=0
+r.Nanite.ProjectEnabled=0
+r.SkinCache.CompileShaders=1
+
+[DevOptions.Shaders]
+; cap shader-compile workers so 64x workers don't OOM-kill the editor (rc=137)
+NumUnusedShaderCompilingThreads=58
+MaxShaderJobBatchSize=8
+bAllowCompilingThroughWorkers=True
+bAllowAsynchronousShaderCompiling=True
 INI
 echo "project: $PROJ (content-only, filesystem DDC at /workspace/ddc)"
 
