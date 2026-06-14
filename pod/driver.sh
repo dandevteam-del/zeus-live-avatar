@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-# READ-ONLY diagnostic (no xdotool / no clicks) — safe while Daniel has the editor.
+# READ-ONLY diagnostic (no clicks) — safe while editor is open.
 set -x
-EP=/home/ue4/UnrealEngine/Engine/Plugins/MetaHuman/MetaHumanCharacter
-echo "=== MetaHumanCharacter content (asset types / factories hints) ==="
-find "$EP" -maxdepth 3 -iname "*.uasset" 2>/dev/null | head
-echo "=== strings in editor .so: how the create entry is named ==="
-strings "$EP/Binaries/Linux/libUnrealEditor-MetaHumanCharacter.so" 2>/dev/null | grep -iE "MetaHuman Character|Create MetaHuman|New MetaHuman|MetaHumanCharacterFactory|Add a new|MetaHuman$" | sort -u | head -30
-echo "=== editor module strings for menu/toolbar entries ==="
-strings "$EP/Binaries/Linux/libUnrealEditor-MetaHumanCharacterPaletteEditor.so" 2>/dev/null | grep -iE "MetaHuman Character|Create|New Character" | sort -u | head -20
-echo "=== did MetaHumanCharacter editor module load? (from ue.log) ==="
-grep -iE "MetaHumanCharacter" /workspace/ue.log | grep -iE "module|mount|load|fail|error" | tail -10
+ENG=/home/ue4/UnrealEngine
+echo "=== GitDependencies / Setup tooling present? ==="
+ls -la "$ENG/Setup.sh" "$ENG/Engine/Build/BatchFiles/Linux/GitDependencies.sh" 2>&1 | head
+find "$ENG/Engine" -maxdepth 4 -iname "*.gitdeps.xml" 2>/dev/null | head
+echo "=== any existing MetaHuman Creator Core Data already in image? ==="
+find "$ENG" -maxdepth 6 -iname "*CoreData*" -o -iname "*MetaHumanCreatorCoreData*" 2>/dev/null | grep -i meta | head
+echo "=== what core-data path/name does the plugin look for? (strings) ==="
+strings "$ENG/Engine/Plugins/MetaHuman/MetaHumanCharacter/Binaries/Linux/libUnrealEditor-MetaHumanCharacter.so" 2>/dev/null | grep -iE "CoreData|Core Data|requires that|/MetaHuman/|MetaHumanCreator" | sort -u | head -30
+echo "=== MetaHumanCharacter plugin folder layout (look for empty/expected dirs) ==="
+du -sh "$ENG/Engine/Plugins/MetaHuman/MetaHumanCharacter/Content" 2>/dev/null
+ls "$ENG/Engine/Plugins/MetaHuman/MetaHumanCharacter/" 2>/dev/null
+echo "=== is there a MetaHumanCharacterPalette 'Optional' or content dir expecting data? ==="
+find "$ENG/Engine/Plugins/MetaHuman" -maxdepth 2 -type d 2>/dev/null
 echo "diag done"
