@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 set -x
 export DISPLAY=:1
-WEBDIR=/workspace/web
-# No windowactivate (it races and dismisses the menu). Editor is the only window.
-xdotool mousemove 237 12
-sleep 0.3
-xdotool click 1
-sleep 0.6
-# Move cursor INTO the open dropdown to hover-hold it, then shoot.
-xdotool mousemove 120 80
-sleep 0.6
-import -window root "$WEBDIR/screen.png" 2>/dev/null
-echo "tools click + hover-hold shot"
+echo "=== engine root ==="
+ENG=$(dirname $(dirname $(dirname $(find / -maxdepth 7 -name UnrealEditor -type f 2>/dev/null | head -1))))
+echo "ENG=$ENG"
+echo "=== ALL MetaHuman / Fab / Bridge / Quixel plugins shipped in the engine ==="
+find "$ENG/.." -maxdepth 6 -iname "*.uplugin" 2>/dev/null | grep -iE "metahuman|fab|bridge|quixel|riglogic" | sort
+echo "=== anything MetaHuman anywhere under engine plugins ==="
+find / -maxdepth 8 -iname "*metahuman*" -type d 2>/dev/null | head -20
+echo "=== our project's enabled plugins ==="
+cat /workspace/ZeusAvatar/ZeusAvatar.uproject 2>/dev/null
+echo "diag done"
