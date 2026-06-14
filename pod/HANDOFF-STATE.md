@@ -77,7 +77,16 @@ Streaming (`pod/03_package_pixelstreaming.sh` pattern), run the stream.
 - **Remaining 2D bug:** SadTalker runtime crash at "3DMM Extraction for source image" (face-detect/preprocess). Fix not yet applied. Run via the worker venv: `video-studio/worker/.venv/bin/python build_agent_demo_sadtalker.py "<script>"`.
 - 2D LatentSync demo already shipped earlier (`outputs/AGENT-DEMO.mp4`) but lip-sync was poor (still-image limitation) — SadTalker is the replacement.
 
-## ⚠️ CRITICAL FINDING — UE 5.6 Linux CANNOT create/import MetaHumans (must use 5.7)
+## ✅ RESOLVED on UE 5.7 — MetaHuman Creator works on the Linux pod
+Pod `fznzjbsx69uq7z` runs **UE 5.7.4**. Verified: `MetaHumanCharacterEditor` module is now
+`PlatformAllowList: <all>` (Linux allowed) AND ships a **precompiled** `libUnrealEditor-MetaHumanCharacterEditor.so`
+(9.8 MB). Editor boots, MetaHumanCharacter content loads (ARKit face mapping etc.), no plugin failures.
+**So "MetaHuman Character" now appears in Content Browser → right-click → MetaHuman.**
+NEXT: Daniel creates `ZeusAgent` in the Creator (double-click the asset → MetaHuman Creator opens; Epic
+login when prompted for autorig/texture synthesis). Then assemble → LiveLink subject `ZeusAvatar` →
+Pixel Streaming. (Menu-clicking via driver.sh xdotool is flaky for automation but reliable for a human in noVNC.)
+
+## (historical) UE 5.6 Linux CANNOT create/import MetaHumans — why we upgraded to 5.7
 The MetaHuman **Creator** editor modules (`MetaHumanCharacterEditor`, `MetaHumanDefaultEditorPipeline`,
 `MetaHumanCharacterMigrationEditor`, `InterchangeDNA`) are declared **`"PlatformAllowList": ["Win64"]`**
 in `MetaHumanCharacter.uplugin` — **Windows-only in 5.6**. So on a Linux pod you can neither create nor
