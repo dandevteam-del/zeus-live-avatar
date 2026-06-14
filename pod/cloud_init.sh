@@ -62,6 +62,10 @@ r.Lumen.Supported=0
 r.RayTracing=0
 r.Nanite.ProjectEnabled=0
 r.SkinCache.CompileShaders=1
+; TSR (Temporal Super Resolution) generates hundreds of FTSRRejectShadingCS
+; permutations that take 40-60s EACH to compile. Use TAA instead -> those never build.
+r.AntiAliasingMethod=2
+r.TSR.ShadingRejection=0
 
 [DevOptions.Shaders]
 ; cap shader-compile workers so 64x workers don't OOM-kill the editor (rc=137)
@@ -114,8 +118,8 @@ if [ -n "$UE" ]; then
       env "VK_ICD_FILENAMES=${VK_ICD_FILENAMES:-}" \
           "$UE" "$PROJ/ZeusAvatar.uproject" \
           -vulkan -nosplash -stdout -NoVerifyGC -unattended -nopause \
-          "-ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=60,[DevOptions.Shaders]:MaxShaderJobBatchSize=6" \
-          -corelimit=6 \
+          "-ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=16,[DevOptions.Shaders]:MaxShaderJobBatchSize=6" \
+          -corelimit=24 \
           >> "$WORK/ue.log" 2>&1
       echo "[loop] editor exited rc=$? — relaunching in 8s" >> "$WORK/ue.log"
       sleep 8
