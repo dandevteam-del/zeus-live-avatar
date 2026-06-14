@@ -1,23 +1,15 @@
 #!/usr/bin/env bash
-# Server-side editor driver. Edit + push; the pod runs it within ~12s, output ->
-# /driver.out, fresh /screen.png. xdotool drives UE on DISPLAY=:1.
+# Server-side editor driver. Edit + push; pod runs within ~12s -> /driver.out + /screen.png.
 set -x
 export DISPLAY=:1
-
-echo "=== ALL X windows (id | pid | class | name | geometry) ==="
-for w in $(xdotool search --onlyvisible "" 2>/dev/null); do
-  nm=$(xdotool getwindowname "$w" 2>/dev/null)
-  cl=$(xprop -id "$w" WM_CLASS 2>/dev/null | sed 's/.*= //')
-  geo=$(xdotool getwindowgeometry "$w" 2>/dev/null | tr '\n' ' ')
-  pid=$(xdotool getwindowpid "$w" 2>/dev/null)
-  echo "WIN $w | pid=$pid | class=$cl | name='$nm' | $geo"
-done
-echo "=== largest window (likely the editor) ==="
-BEST=""; BESTA=0
-for w in $(xdotool search --onlyvisible "" 2>/dev/null); do
-  eval $(xdotool getwindowgeometry --shell "$w" 2>/dev/null)
-  a=$(( ${WIDTH:-0} * ${HEIGHT:-0} ))
-  if [ "$a" -gt "$BESTA" ]; then BESTA=$a; BEST=$w; fi
-done
-echo "largest win=$BEST area=$BESTA"
-echo "probe2 done"
+WEBDIR=/workspace/web
+WIN=$(xdotool search --name "ZeusAvatar - Unreal Editor" 2>/dev/null | head -1)
+echo "UE win=$WIN"
+xdotool windowactivate "$WIN" 2>/dev/null; xdotool windowraise "$WIN" 2>/dev/null
+sleep 1
+# Crop the top menu bar (full res) so we can read label x-positions precisely.
+import -window root -crop 700x34+0+0 +repage "$WEBDIR/menubar.png" 2>/dev/null
+echo "menubar crop saved -> /menubar.png"
+# Also a full shot for context
+import -window root "$WEBDIR/screen.png" 2>/dev/null
+echo "driver done"
