@@ -1,28 +1,18 @@
 #!/usr/bin/env bash
 set -x
 export DISPLAY=:1
-PROJ=/workspace/ZeusAvatar/ZeusAvatar.uproject
-# Enable MetaHumanCharacter (the in-editor MetaHuman Creator) + the full stack.
-cat > "$PROJ" <<'JSON'
-{
-  "FileVersion": 3,
-  "EngineAssociation": "5.6",
-  "Category": "",
-  "Description": "Zeus Avatar — MetaHuman created in-editor (MetaHumanCharacter)",
-  "Plugins": [
-    { "Name": "LiveLink", "Enabled": true },
-    { "Name": "PixelStreaming", "Enabled": true },
-    { "Name": "MetaHuman", "Enabled": true, "SupportedTargetPlatforms": ["Win64","Linux"] },
-    { "Name": "MetaHumanCharacter", "Enabled": true, "SupportedTargetPlatforms": ["Win64","Linux"] },
-    { "Name": "MetaHumanCoreTech", "Enabled": true, "SupportedTargetPlatforms": ["Win64","Linux"] },
-    { "Name": "MetaHumanCalibrationProcessing", "Enabled": true, "SupportedTargetPlatforms": ["Win64","Linux"] },
-    { "Name": "MetaHumanLiveLink", "Enabled": true },
-    { "Name": "RigLogic", "Enabled": true },
-    { "Name": "ControlRig", "Enabled": true }
-  ]
-}
-JSON
-echo "=== new uproject ==="; cat "$PROJ"
-# Restart the editor so it loads MetaHumanCharacter (cloud_init loop relaunches in ~8s).
-pkill -f "UnrealEditor.*ZeusAvatar" 2>/dev/null
-echo "killed editor -> relaunch loop will restart with MetaHumanCharacter enabled"
+WEBDIR=/workspace/web
+# Confirm the running editor actually loaded MetaHumanCharacter (this boot).
+echo "=== MetaHumanCharacter in ue.log (mount/load) ==="
+grep -iE "MetaHumanCharacter" /workspace/ue.log | tail -5
+echo "=== plugin load failures? ==="
+grep -iE "unable to load|incompatible|missing modules" /workspace/ue.log | tail -5
+WIN=$(xdotool search --name "ZeusAvatar - Unreal Editor" 2>/dev/null | head -1)
+echo "win=$WIN"
+# Open the Content Drawer (Ctrl+Space) so we can reach the +Add / right-click create menu.
+xdotool windowactivate "$WIN" 2>/dev/null
+sleep 0.5
+xdotool key --window "$WIN" ctrl+space
+sleep 1.5
+import -window root "$WEBDIR/screen.png" 2>/dev/null
+echo "opened content drawer"
