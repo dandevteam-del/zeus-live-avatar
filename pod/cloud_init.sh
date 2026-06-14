@@ -19,8 +19,8 @@ $SUDO apt-get install -y --no-install-recommends \
     libnss3 libxcomposite1 libxcursor1 libxi6 libxtst6 libxrandr2 libasound2 2>&1 | tail -3
 # GPU extras (best-effort — a missing pkg must NOT abort the desktop)
 $SUDO apt-get install -y --no-install-recommends virtualgl mesa-utils libvulkan1 vulkan-tools 2>&1 | tail -3 || true
-# imagemagick = pod-side screenshots of the editor, served over HTTPS (reliable remote eyes)
-$SUDO apt-get install -y --no-install-recommends imagemagick x11-apps 2>&1 | tail -2 || true
+# imagemagick = pod-side screenshots; xdotool/wmctrl = programmatic input into the editor
+$SUDO apt-get install -y --no-install-recommends imagemagick x11-apps xdotool wmctrl 2>&1 | tail -2 || true
 
 # ----- web-served dir we can write to (logs fetchable over HTTPS) -----
 WEBDIR="$WORK/web"; mkdir -p "$WEBDIR"
@@ -149,5 +149,26 @@ fi
     sleep 4
   done ) &
 echo "screenshotter -> $WEBDIR/screen.png (HTTPS: /screen.png)"
+
+# ----- git-driven command runner: pull the kit, run pod/driver.sh when it changes -----
+# Lets the operator drive the editor server-side (xdotool) by pushing driver.sh to the
+# repo — no SSH, no stop/resume per iteration. Output + a fresh shot land in the web dir.
+export DISPLAY=:1
+( LAST=""; while true; do
+    git -C "$WORK/kit" pull -q 2>/dev/null
+    DRV="$WORK/kit/pod/driver.sh"
+    if [ -f "$DRV" ]; then
+      H=$(md5sum "$DRV" 2>/dev/null | cut -d' ' -f1)
+      if [ "$H" != "$LAST" ]; then
+        LAST="$H"
+        echo "===== driver.sh run $(date -u 2>/dev/null) (md5 $H) =====" > "$WEBDIR/driver.out"
+        DISPLAY=:1 bash "$DRV" >> "$WEBDIR/driver.out" 2>&1
+        echo "----- driver.sh done rc=$? -----" >> "$WEBDIR/driver.out"
+        DISPLAY=:1 import -window root "$WEBDIR/screen.png" 2>/dev/null
+      fi
+    fi
+    sleep 12
+  done ) &
+echo "driver-runner watching kit/pod/driver.sh (HTTPS: /driver.out)"
 echo "===== CLOUD_INIT v2 DONE — logs at /boot.log and /ue.log on :6080 ====="
 sleep infinity
