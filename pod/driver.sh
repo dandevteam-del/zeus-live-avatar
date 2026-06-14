@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
-# READ-ONLY: is the UE build toolchain present so we can compile the missing module?
+# Kick off (detached) a compile of the missing MetaHuman editor modules.
 set -x
 ENG=/home/ue4/UnrealEngine
-echo "=== Build.sh / UBT present? ==="
-ls -la "$ENG/Engine/Build/BatchFiles/Linux/Build.sh" 2>&1 | head
-ls -la "$ENG/Engine/Binaries/DotNET/UnrealBuildTool/"*.dll 2>&1 | head -3
-echo "=== bundled clang toolchain present? ==="
-ls -d "$ENG/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/"*/ 2>&1 | head
-which clang clang++ 2>&1 | head
-echo "=== dotnet present (UBT runtime)? ==="
-ls "$ENG/Engine/Binaries/ThirdParty/DotNet/"*/linux* -d 2>&1 | head
-"$ENG/Engine/Build/BatchFiles/Linux/RunUBT.sh" -Help >/tmp/ubt.txt 2>&1; head -3 /tmp/ubt.txt
-echo "=== free disk for compile intermediates ==="
-df -h /workspace / 2>/dev/null | head
-echo "diag done"
+WEBDIR=/workspace/web
+UPROJ=/workspace/ZeusAvatar/ZeusAvatar.uproject
+echo "=== is this an Installed (non-compilable) build? ==="
+ls -la "$ENG/Engine/Build/InstalledBuild.txt" 2>&1 | head -1
+echo "=== launch build (detached) if not already running ==="
+if pgrep -f "Build.sh UnrealEditor" >/dev/null 2>&1 || pgrep -f "dotnet.*UnrealBuildTool" >/dev/null 2>&1; then
+  echo "build already running"
+else
+  cd "$ENG"
+  nohup ./Engine/Build/BatchFiles/Linux/Build.sh UnrealEditor Linux Development \
+     -Project="$UPROJ" -TargetType=Editor \
+     > "$WEBDIR/build.log" 2>&1 &
+  echo "launched build pid $! -> /build.log"
+fi
+sleep 6
+echo "=== build.log head ==="
+head -30 "$WEBDIR/build.log" 2>/dev/null
+echo "driver done"
