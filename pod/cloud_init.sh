@@ -101,7 +101,7 @@ if [ -n "$UE" ]; then
       pkill -f CrashReportClient 2>/dev/null
       env "VK_ICD_FILENAMES=${VK_ICD_FILENAMES:-}" \
           "$UE" "$PROJ/ZeusAvatar.uproject" \
-          -vulkan -nosplash -stdout -NoVerifyGC \
+          -vulkan -nosplash -stdout -NoVerifyGC -unattended -nopause \
           >> "$WORK/ue.log" 2>&1
       echo "[loop] editor exited rc=$? — relaunching in 8s" >> "$WORK/ue.log"
       sleep 8
