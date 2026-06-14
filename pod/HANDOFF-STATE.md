@@ -34,15 +34,22 @@ re-clones the kit + re-runs cloud_init). Resume keeps the same host/GPU.
 5. **Driver-warning dialog** blocked startup — Daniel clicked **No** once; permanent fix is `-unattended -nopause` on the launch (now in cloud_init).
 6. **OOM kill loop (rc=137)** — UE saw host's 252 GB and spawned **64 shader workers** > container RAM → kernel killed it repeatedly. FIX: `-corelimit=6` + `-ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=60` on the launch + disabled Lumen/RayTracing/Nanite in DefaultEngine.ini. **Worked → now "Using 1 local workers", no new OOM.**
 
-## ⏳ CURRENT STATE / next action
-Editor is **compiling shaders with 1 worker (no OOM, but slow)** — log advancing,
-not yet "Engine is initialized". Two options next session:
-- **(A) Wait it out** — 1 worker is safe; let it finish (could be slow). Watch
-  `/ue.log` for `Engine is initialized` / `Bringing up level` → editor window appears.
-- **(B) Tune workers up** (faster, recommended): change `-corelimit=6` →
-  `-corelimit=8` and try `NumUnusedShaderCompilingThreads=56` (→ ~8 workers). More
-  speed without OOM. Push + stop/resume. If OOM returns, step back down.
-  (1 worker is over-conservative; the sweet spot for this pod's RAM is ~4–8.)
+## ✅ CURRENT STATE — EDITOR IS LIVE
+**`LogInit: Engine is initialized. Leaving FEngineLoop::Init()`** reached 2026-06-14 03:51 UTC.
+Editor stable on its first launch (frame counter ticking, no crash-relaunch since init,
+no new OOM). Walls 1–6 all cleared.
+- **Final shader fix:** `-corelimit=24` + `NumUnusedShaderCompilingThreads=16` → **12 local
+  workers** (was starved to 1 by corelimit=6/unused=60), AND dropped TSR via
+  `r.AntiAliasingMethod=2` + `r.TSR.ShadingRejection=0` in DefaultEngine.ini so the
+  hundreds of 40–60s `FTSRRejectShadingCS` permutations never compile. No OOM at 12 workers.
+- Worker-count math: UE ≈ `min(cores, corelimit) − NumUnusedShaderCompilingThreads`,
+  clamped ≥1. Don't set corelimit below the unused-threads value or it starves to 1.
+
+### ▶ NEXT ACTION = DANIEL (only he can — Epic creds)
+Open noVNC https://xewb03wbte8arr-6080.proxy.runpod.net/vnc.html → in the UE editor:
+Window → **Fab** (Quixel Bridge) → sign in with Epic → add MetaHuman plugin → create an
+ORIGINAL suited presenter → name **`ZeusAgent`** → Add to project. Then ping Claude to
+wire the AnimBP + package Pixel Streaming.
 
 **Once the editor window shows in noVNC → DANIEL does (only he can — Epic creds):**
 Window → **Fab** (Quixel Bridge) → sign in with Epic → add MetaHuman plugin → create
