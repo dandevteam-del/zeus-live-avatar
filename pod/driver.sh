@@ -5,13 +5,8 @@ WEBDIR=/workspace/web
 WIN=$(xdotool search --name "ZeusAvatar - Unreal Editor" 2>/dev/null | head -1)
 xdotool windowactivate "$WIN" 2>/dev/null; sleep 0.4
 xdotool key Escape; sleep 0.3
-# Chain: open drawer -> right-click content -> hover the MetaHuman submenu.
-xdotool mousemove 70 1068 click 1
+# Open the Window menu (x=168 y=12) and screenshot it.
+xdotool mousemove 168 12 click 1
 sleep 1.2
-xdotool mousemove 1000 980 click 3
-sleep 1.2
-# Hover "MetaHuman" category row (~1010,735) to expand its submenu.
-xdotool mousemove 1010 735
-sleep 1.5
 import -window root "$WEBDIR/screen.png" 2>/dev/null
-echo "hovered MetaHuman submenu"
+echo "opened Window menu"
