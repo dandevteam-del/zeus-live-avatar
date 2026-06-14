@@ -51,16 +51,26 @@ websockify --web="$WEBDIR" 6080 localhost:5900 > "$WORK/novnc.log" 2>&1 &
 sleep 2
 
 echo "=== GPU CHECK ==="; nvidia-smi -L 2>&1 | head -2
-echo "=== VULKAN ==="; vulkaninfo --summary 2>&1 | grep -iE "deviceName|driverName|apiVersion" | head -4
+echo "NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES:-<unset>}"
+echo "=== nvidia GLX/Vulkan libs ==="; ls -la /usr/lib/x86_64-linux-gnu/libGLX_nvidia.so* /usr/local/nvidia/lib64/libGLX_nvidia.so* 2>&1 | head
+echo "=== existing vulkan ICDs ==="; ls -la /usr/share/vulkan/icd.d/ 2>&1
+# Ensure the NVIDIA Vulkan ICD is registered so Vulkan can see the GPU.
+NVLIB=$(ls /usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0 /usr/local/nvidia/lib64/libGLX_nvidia.so.0 2>/dev/null | head -1)
+if [ -n "$NVLIB" ]; then
+  $SUDO mkdir -p /usr/share/vulkan/icd.d
+  echo "{\"file_format_version\":\"1.0.0\",\"ICD\":{\"library_path\":\"$NVLIB\",\"api_version\":\"1.3.277\"}}" | $SUDO tee /usr/share/vulkan/icd.d/nvidia_icd.json >/dev/null
+  export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json
+  echo "wrote nvidia ICD -> $NVLIB"
+else
+  echo "!! libGLX_nvidia.so.0 NOT mounted — needs NVIDIA_DRIVER_CAPABILITIES=all at deploy"
+fi
+echo "=== vulkaninfo after ICD ==="; vulkaninfo --summary 2>&1 | grep -iE "deviceName|driverName|apiVersion|GPU" | head -6
 
-# ----- launch UE editor with GPU (VirtualGL EGL), fall back to plain -----
+# ----- launch UE editor (Vulkan on the GPU) -----
 echo "----- launching UE editor -----"
-if command -v vglrun >/dev/null 2>&1 && [ -n "$UE" ]; then
-  VGL_DISPLAY=egl vglrun -d egl "$UE" "$PROJ/ZeusAvatar.uproject" -vulkan -nosplash > "$WORK/ue.log" 2>&1 &
-  echo "launched via vglrun egl (pid $!)"
-elif [ -n "$UE" ]; then
-  "$UE" "$PROJ/ZeusAvatar.uproject" -vulkan -nosplash > "$WORK/ue.log" 2>&1 &
-  echo "launched plain (pid $!)"
+if [ -n "$UE" ]; then
+  VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-}" "$UE" "$PROJ/ZeusAvatar.uproject" -vulkan -nosplash -stdout -FullStdOutLogOutput > "$WORK/ue.log" 2>&1 &
+  echo "launched (pid $!)"
 else
   echo "!! UE editor not found"
 fi
