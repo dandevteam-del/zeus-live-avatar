@@ -1,15 +1,9 @@
 #!/usr/bin/env bash
 set -x
-export DISPLAY=:1
-WEBDIR=/workspace/web
-WIN=$(xdotool search --name "ZeusAvatar - Unreal Editor" 2>/dev/null | head -1)
-xdotool windowactivate "$WIN" 2>/dev/null; sleep 0.5
-xdotool key Escape; sleep 0.3
-xdotool mousemove 70 1068 click 1        # Content Drawer
-sleep 1.5
-xdotool mousemove 1000 980 click 3       # right-click content area
-sleep 1.2
-xdotool mousemove 1016 782               # hover MetaHuman category
-sleep 1.5
-import -window root "$WEBDIR/screen.png" 2>/dev/null
-echo "hovered MetaHuman category on 5.7"
+echo "=== MetaHumanCharacter* module loads in this 5.7 boot (real log, after 07:17) ==="
+awk '/07\.1[7-9]|07\.[2-9][0-9]/{on=1} on' /workspace/ue.log | grep -aiE "MetaHumanCharacter|Mounting.*MetaHuman|MetaHuman.*module|ShaderCompiler.*MetaHuman" | grep -aiE "MetaHumanCharacter" | tail -15
+echo "=== plugins mounted (any MetaHuman) this boot ==="
+awk '/07\.1[7-9]|07\.[2-9][0-9]/{on=1} on' /workspace/ue.log | grep -aiE "Mounting (Engine|Project) plugin (MetaHuman|RigLogic|LiveLink)" | tail -15
+echo "=== plugin failures this boot ==="
+awk '/07\.1[7-9]|07\.[2-9][0-9]/{on=1} on' /workspace/ue.log | grep -aiE "unable to load|incompatible|was not found|missing modules" | grep -ai meta | tail
+echo "diag done"
