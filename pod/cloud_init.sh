@@ -171,5 +171,16 @@ export DISPLAY=:1
     sleep 12
   done ) &
 echo "driver-runner watching kit/pod/driver.sh (HTTPS: /driver.out)"
+
+# ----- fast control server: low-latency xdotool/screenshot bridge on :8000 -----
+# https://<pod>-8000.proxy.runpod.net/  — click->verify in one ~1s round-trip.
+( while true; do
+    if ! pgrep -f control_server.py >/dev/null 2>&1; then
+      DISPLAY=:1 ZCTL_TOKEN=zeus python3 "$WORK/kit/pod/control_server.py" \
+        >> "$WORK/ctl.log" 2>&1
+    fi
+    sleep 5
+  done ) &
+echo "control server -> :8000 (HTTPS proxied)"
 echo "===== CLOUD_INIT v2 DONE — logs at /boot.log and /ue.log on :6080 ====="
 sleep infinity
