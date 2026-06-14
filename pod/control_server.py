@@ -74,7 +74,12 @@ class H(BaseHTTPRequestHandler):
                 run(["xdotool", "key", "--clearmodifiers", g("k", "Escape")])
                 self._json({"ok": True}); return
             if path == "/type":
-                run(["xdotool", "type", "--clearmodifiers", g("s", "")])
+                run(["xdotool", "type", "--clearmodifiers", "--delay",
+                     g("delay", "40"), g("s", "")])
+                self._json({"ok": True}); return
+            if path == "/clearfield":   # ctrl+a, delete — wipe a focused text field
+                run(["xdotool", "key", "--clearmodifiers", "ctrl+a"])
+                run(["xdotool", "key", "--clearmodifiers", "Delete"])
                 self._json({"ok": True}); return
             if path == "/exec":
                 rc, out = run(base64.b64decode(g("c", "")).decode())
