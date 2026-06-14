@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 set -x
 export DISPLAY=:1
-WEBDIR=/workspace/web
-# Confirm the running editor actually loaded MetaHumanCharacter (this boot).
-echo "=== MetaHumanCharacter in ue.log (mount/load) ==="
-grep -iE "MetaHumanCharacter" /workspace/ue.log | tail -5
-echo "=== plugin load failures? ==="
-grep -iE "unable to load|incompatible|missing modules" /workspace/ue.log | tail -5
-WIN=$(xdotool search --name "ZeusAvatar - Unreal Editor" 2>/dev/null | head -1)
-echo "win=$WIN"
-# Open the Content Drawer (Ctrl+Space) so we can reach the +Add / right-click create menu.
-xdotool windowactivate "$WIN" 2>/dev/null
-sleep 0.5
-xdotool key --window "$WIN" ctrl+space
-sleep 1.5
-import -window root "$WEBDIR/screen.png" 2>/dev/null
-echo "opened content drawer"
+EP=/home/ue4/UnrealEngine/Engine/Plugins/MetaHuman
+echo "=== MetaHumanCharacter precompiled Linux binaries present? ==="
+ls -la "$EP/MetaHumanCharacter/Binaries/Linux/" 2>&1 | head
+echo "=== its module list (uplugin) ==="
+grep -iE '"Name"|"Type"|"LoadingPhase"' "$EP/MetaHumanCharacter/MetaHumanCharacter.uplugin" 2>/dev/null | head -40
+echo "=== which MetaHuman plugins HAVE Linux binaries ==="
+for d in "$EP"/*/; do
+  n=$(basename "$d")
+  c=$(ls "$d"Binaries/Linux/*.so 2>/dev/null | wc -l)
+  echo "$n: $c .so"
+done
+echo "=== force-restart editor ==="
+ps -eo pid,comm,args | grep -iE 'UnrealEditor|UnrealGame' | grep -v grep | head
+pkill -9 -f "UnrealEditor" 2>/dev/null; sleep 1
+echo "killed; relaunch loop will restart. waiting 25s to catch fresh log..."
+sleep 25
+echo "=== fresh log: MetaHumanCharacter mount or failure ==="
+tail -400 /workspace/ue.log | grep -iE 'Mounting.*MetaHuman|MetaHumanCharacter|unable to load|missing modules|incompatible' | tail -15
+echo "diag done"
