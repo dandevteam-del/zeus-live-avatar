@@ -35,7 +35,30 @@ cat > "$PROJ/ZeusAvatar.uproject" <<JSON
   "Description":"Zeus Avatar (content-only; MetaHuman added via Fab)",
   "Plugins":[ {"Name":"LiveLink","Enabled":true}, {"Name":"PixelStreaming","Enabled":true} ] }
 JSON
-echo "project: $PROJ (content-only)"
+mkdir -p "$WORK/ddc/Local"
+# Override the DDC backend graph to a plain WRITABLE filesystem cache on the volume.
+# The Installed engine defaults to ZenServer (not running in container) => "no
+# writable nodes" crash. This points it at /workspace/ddc instead. Also silence
+# the bad-driver-version warning dialog.
+cat > "$PROJ/Config/DefaultEngine.ini" <<INI
+[InstalledDerivedDataBackendGraph]
+MinimumDaysToKeepFile=7
+Root=(Type=KeyLength, Length=120, Inner=AsyncPut)
+AsyncPut=(Type=AsyncPut, Inner=Hierarchy)
+Hierarchy=(Type=Hierarchical, Inner=Local)
+Local=(Type=FileSystem, ReadOnly=false, Clean=false, Flush=false, PurgeTransient=true, DeleteUnused=true, UnusedFileAge=34, FoldersToClean=-1, Path="/workspace/ddc/Local")
+
+[DerivedDataBackendGraph]
+MinimumDaysToKeepFile=7
+Root=(Type=KeyLength, Length=120, Inner=AsyncPut)
+AsyncPut=(Type=AsyncPut, Inner=Hierarchy)
+Hierarchy=(Type=Hierarchical, Inner=Local)
+Local=(Type=FileSystem, ReadOnly=false, Clean=false, Flush=false, PurgeTransient=true, DeleteUnused=true, UnusedFileAge=34, FoldersToClean=-1, Path="/workspace/ddc/Local")
+
+[SystemSettings]
+r.WarningOnBadDriverVersion=0
+INI
+echo "project: $PROJ (content-only, filesystem DDC at /workspace/ddc)"
 
 UE=$(ls /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor 2>/dev/null || find / -maxdepth 6 -name UnrealEditor -type f 2>/dev/null | head -1)
 echo "UE_EDITOR=$UE"
@@ -77,11 +100,8 @@ if [ -n "$UE" ]; then
   ( while true; do
       pkill -f CrashReportClient 2>/dev/null
       env "VK_ICD_FILENAMES=${VK_ICD_FILENAMES:-}" \
-          "UE-LocalDataCachePath=$WORK/ddc" "UE-SharedDataCachePath=None" \
           "$UE" "$PROJ/ZeusAvatar.uproject" \
-          -vulkan -nosplash -stdout -unattended=0 \
-          -DDC-ForceMemoryCache -NoVerifyGC \
-          -ExecCmds="r.WarningOnBadDriverVersion 0" \
+          -vulkan -nosplash -stdout -NoVerifyGC \
           >> "$WORK/ue.log" 2>&1
       echo "[loop] editor exited rc=$? — relaunching in 8s" >> "$WORK/ue.log"
       sleep 8
