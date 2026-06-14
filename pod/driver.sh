@@ -1,22 +1,15 @@
 #!/usr/bin/env bash
-# Kick off (detached) a compile of the missing MetaHuman editor modules.
 set -x
 ENG=/home/ue4/UnrealEngine
-WEBDIR=/workspace/web
-UPROJ=/workspace/ZeusAvatar/ZeusAvatar.uproject
-echo "=== is this an Installed (non-compilable) build? ==="
-ls -la "$ENG/Engine/Build/InstalledBuild.txt" 2>&1 | head -1
-echo "=== launch build (detached) if not already running ==="
-if pgrep -f "Build.sh UnrealEditor" >/dev/null 2>&1 || pgrep -f "dotnet.*UnrealBuildTool" >/dev/null 2>&1; then
-  echo "build already running"
-else
-  cd "$ENG"
-  nohup ./Engine/Build/BatchFiles/Linux/Build.sh UnrealEditor Linux Development \
-     -Project="$UPROJ" -TargetType=Editor \
-     > "$WEBDIR/build.log" 2>&1 &
-  echo "launched build pid $! -> /build.log"
-fi
-sleep 6
-echo "=== build.log head ==="
-head -30 "$WEBDIR/build.log" 2>/dev/null
-echo "driver done"
+echo "=== MetaHumanCharacter binaries now ==="
+ls -la "$ENG/Engine/Plugins/MetaHuman/MetaHumanCharacter/Binaries/Linux/" 2>/dev/null
+echo "=== did MetaHumanCharacterEditor.so get built ANYWHERE (engine or project)? ==="
+find "$ENG" /workspace -iname "*MetaHumanCharacterEditor*.so" 2>/dev/null | head
+echo "=== all NEW .so built in last 30 min under MetaHuman plugins ==="
+find "$ENG/Engine/Plugins/MetaHuman" -name "*.so" -mmin -30 2>/dev/null
+echo "=== build.log: was MetaHumanCharacterEditor mentioned as compiled/skipped? ==="
+grep -iE "MetaHumanCharacterEditor|MetaHumanCharacter " "$ENG/../"*build.log /workspace/web/build.log 2>/dev/null | head
+grep -icE "MetaHumanCharacterEditor" /workspace/web/build.log 2>/dev/null
+echo "=== what targets/modules did UBT actually build? (module link lines) ==="
+grep -iE "Link .*\.so" /workspace/web/build.log 2>/dev/null | head -40
+echo "diag done"
