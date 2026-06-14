@@ -1,13 +1,28 @@
 #!/usr/bin/env bash
 set -x
 export DISPLAY=:1
-echo "=== engine root ==="
-ENG=$(dirname $(dirname $(dirname $(find / -maxdepth 7 -name UnrealEditor -type f 2>/dev/null | head -1))))
-echo "ENG=$ENG"
-echo "=== ALL MetaHuman / Fab / Bridge / Quixel plugins shipped in the engine ==="
-find "$ENG/.." -maxdepth 6 -iname "*.uplugin" 2>/dev/null | grep -iE "metahuman|fab|bridge|quixel|riglogic" | sort
-echo "=== anything MetaHuman anywhere under engine plugins ==="
-find / -maxdepth 8 -iname "*metahuman*" -type d 2>/dev/null | head -20
-echo "=== our project's enabled plugins ==="
-cat /workspace/ZeusAvatar/ZeusAvatar.uproject 2>/dev/null
-echo "diag done"
+PROJ=/workspace/ZeusAvatar/ZeusAvatar.uproject
+# Enable MetaHumanCharacter (the in-editor MetaHuman Creator) + the full stack.
+cat > "$PROJ" <<'JSON'
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.6",
+  "Category": "",
+  "Description": "Zeus Avatar — MetaHuman created in-editor (MetaHumanCharacter)",
+  "Plugins": [
+    { "Name": "LiveLink", "Enabled": true },
+    { "Name": "PixelStreaming", "Enabled": true },
+    { "Name": "MetaHuman", "Enabled": true, "SupportedTargetPlatforms": ["Win64","Linux"] },
+    { "Name": "MetaHumanCharacter", "Enabled": true, "SupportedTargetPlatforms": ["Win64","Linux"] },
+    { "Name": "MetaHumanCoreTech", "Enabled": true, "SupportedTargetPlatforms": ["Win64","Linux"] },
+    { "Name": "MetaHumanCalibrationProcessing", "Enabled": true, "SupportedTargetPlatforms": ["Win64","Linux"] },
+    { "Name": "MetaHumanLiveLink", "Enabled": true },
+    { "Name": "RigLogic", "Enabled": true },
+    { "Name": "ControlRig", "Enabled": true }
+  ]
+}
+JSON
+echo "=== new uproject ==="; cat "$PROJ"
+# Restart the editor so it loads MetaHumanCharacter (cloud_init loop relaunches in ~8s).
+pkill -f "UnrealEditor.*ZeusAvatar" 2>/dev/null
+echo "killed editor -> relaunch loop will restart with MetaHumanCharacter enabled"

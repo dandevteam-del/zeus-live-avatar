@@ -39,7 +39,8 @@ cat > "$PROJ/ZeusAvatar.uproject" <<JSON
 { "FileVersion":3, "EngineAssociation":"5.6", "Category":"",
   "Description":"Zeus Avatar (content-only; MetaHuman created in-editor)",
   "Plugins":[ {"Name":"LiveLink","Enabled":true}, {"Name":"PixelStreaming","Enabled":true},
-              {"Name":"MetaHumanSDK","Enabled":true}, {"Name":"MetaHumanCharacter","Enabled":true},
+              {"Name":"MetaHuman","Enabled":true}, {"Name":"MetaHumanCharacter","Enabled":true},
+              {"Name":"MetaHumanCoreTech","Enabled":true}, {"Name":"MetaHumanLiveLink","Enabled":true},
               {"Name":"RigLogic","Enabled":true}, {"Name":"ControlRig","Enabled":true} ] }
 JSON
 echo "wrote fresh uproject (with MetaHuman plugins pre-enabled)"
