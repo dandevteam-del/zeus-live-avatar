@@ -19,6 +19,8 @@ $SUDO apt-get install -y --no-install-recommends \
     libnss3 libxcomposite1 libxcursor1 libxi6 libxtst6 libxrandr2 libasound2 2>&1 | tail -3
 # GPU extras (best-effort — a missing pkg must NOT abort the desktop)
 $SUDO apt-get install -y --no-install-recommends virtualgl mesa-utils libvulkan1 vulkan-tools 2>&1 | tail -3 || true
+# imagemagick = pod-side screenshots of the editor, served over HTTPS (reliable remote eyes)
+$SUDO apt-get install -y --no-install-recommends imagemagick x11-apps 2>&1 | tail -2 || true
 
 # ----- web-served dir we can write to (logs fetchable over HTTPS) -----
 WEBDIR="$WORK/web"; mkdir -p "$WEBDIR"
@@ -30,11 +32,20 @@ if [ -d "$WORK/kit/.git" ]; then (cd "$WORK/kit" && git pull -q); else git clone
 
 # ----- CONTENT-ONLY project (no Source/Modules => editor opens, nothing to compile) -----
 PROJ="$WORK/ZeusAvatar"; mkdir -p "$PROJ/Content" "$PROJ/Config"
+# Only generate the .uproject on FIRST boot. After that the editor may have written
+# plugin-enable changes (MetaHuman etc.) into it — never clobber those on resume.
+if [ ! -f "$PROJ/ZeusAvatar.uproject" ]; then
 cat > "$PROJ/ZeusAvatar.uproject" <<JSON
 { "FileVersion":3, "EngineAssociation":"5.6", "Category":"",
-  "Description":"Zeus Avatar (content-only; MetaHuman added via Fab)",
-  "Plugins":[ {"Name":"LiveLink","Enabled":true}, {"Name":"PixelStreaming","Enabled":true} ] }
+  "Description":"Zeus Avatar (content-only; MetaHuman created in-editor)",
+  "Plugins":[ {"Name":"LiveLink","Enabled":true}, {"Name":"PixelStreaming","Enabled":true},
+              {"Name":"MetaHumanSDK","Enabled":true}, {"Name":"MetaHumanCharacter","Enabled":true},
+              {"Name":"RigLogic","Enabled":true}, {"Name":"ControlRig","Enabled":true} ] }
 JSON
+echo "wrote fresh uproject (with MetaHuman plugins pre-enabled)"
+else
+echo "uproject already exists — preserving editor-made plugin changes"
+fi
 mkdir -p "$WORK/ddc/Local"
 # Override the DDC backend graph to a plain WRITABLE filesystem cache on the volume.
 # The Installed engine defaults to ZenServer (not running in container) => "no
@@ -131,5 +142,12 @@ fi
 
 # ----- keep logs fresh in the web dir for remote viewing -----
 ( while true; do cp "$WORK/ue.log" "$WEBDIR/ue.log" 2>/dev/null; cp "$LOG" "$WEBDIR/boot.log" 2>/dev/null; sleep 8; done ) &
+# ----- pod-side screenshot of the editor -> web dir (fetchable at /screen.png) -----
+( while true; do
+    DISPLAY=:1 import -window root "$WEBDIR/screen.next.png" 2>/dev/null \
+      && mv "$WEBDIR/screen.next.png" "$WEBDIR/screen.png" 2>/dev/null
+    sleep 4
+  done ) &
+echo "screenshotter -> $WEBDIR/screen.png (HTTPS: /screen.png)"
 echo "===== CLOUD_INIT v2 DONE — logs at /boot.log and /ue.log on :6080 ====="
 sleep infinity
