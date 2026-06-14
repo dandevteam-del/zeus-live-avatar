@@ -114,6 +114,8 @@ if [ -n "$UE" ]; then
       env "VK_ICD_FILENAMES=${VK_ICD_FILENAMES:-}" \
           "$UE" "$PROJ/ZeusAvatar.uproject" \
           -vulkan -nosplash -stdout -NoVerifyGC -unattended -nopause \
+          "-ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=60,[DevOptions.Shaders]:MaxShaderJobBatchSize=6" \
+          -corelimit=6 \
           >> "$WORK/ue.log" 2>&1
       echo "[loop] editor exited rc=$? — relaunching in 8s" >> "$WORK/ue.log"
       sleep 8
