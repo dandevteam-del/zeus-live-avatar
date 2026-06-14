@@ -13,10 +13,12 @@ echo "SUDO='${SUDO:-none}'"
 
 export DEBIAN_FRONTEND=noninteractive
 $SUDO apt-get update -y 2>&1 | tail -2
+# CORE desktop (proven set — must succeed so noVNC + logs come up)
 $SUDO apt-get install -y --no-install-recommends \
     xvfb x11vnc novnc websockify openbox xterm git curl ca-certificates \
-    virtualgl mesa-utils libvulkan1 vulkan-tools \
-    libnss3 libxcomposite1 libxcursor1 libxi6 libxtst6 libxrandr2 libasound2t64 libasound2 2>&1 | tail -4
+    libnss3 libxcomposite1 libxcursor1 libxi6 libxtst6 libxrandr2 libasound2 2>&1 | tail -3
+# GPU extras (best-effort — a missing pkg must NOT abort the desktop)
+$SUDO apt-get install -y --no-install-recommends virtualgl mesa-utils libvulkan1 vulkan-tools 2>&1 | tail -3 || true
 
 # ----- web-served dir we can write to (logs fetchable over HTTPS) -----
 WEBDIR="$WORK/web"; mkdir -p "$WEBDIR"
